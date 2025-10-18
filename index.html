@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>탄소포집 효율 비교</title>
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-blue-50 p-6">
+  <div class="max-w-7xl mx-auto">
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800 mb-2">탄소포집기술 효율 비교 시스템</h1>
+      <p class="text-gray-600">다양한 환경 조건에서의 탄소포집 기술 성능을 비교분석합니다</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 환경 설정 -->
+      <div class="p-6 bg-white rounded-lg shadow-lg">
+        <h2 class="font-semibold mb-4 text-gray-700">환경 설정</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block mb-1 text-gray-600">배출원 선택</label>
+            <select id="plantSelect" class="w-full p-2 border rounded"></select>
+          </div>
+          <div>
+            <label class="block mb-1 text-gray-600">포집 기술</label>
+            <select id="captureSelect" class="w-full p-2 border rounded"></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 효율 결과 -->
+      <div class="p-6 bg-white rounded-lg shadow-lg text-center">
+        <h2 class="font-semibold mb-4 text-gray-700">포집 효율 결과</h2>
+        <div class="text-5xl font-bold text-green-600 mb-2" id="efficiency">0%</div>
+        <div class="bg-gray-200 rounded-full h-4 mb-4">
+          <div id="effBar" class="bg-green-500 h-4 rounded-full transition-all duration-1000" style="width: 0%"></div>
+        </div>
+        <p class="text-gray-600" id="captureDesc"></p>
+        <p class="text-gray-600 mt-1" id="energyPenalty"></p>
+      </div>
+    </div>
+  </div>
+
+<script>
+// 발전소별 환경 데이터
+const plantData = {
+  coal: { name: '석탄화력발전소', co2Concentration: 12, co2EmissionRate: 820, flueGasTemp: 150, sox: 0.03, nox: 0.025, particulates: 30 },
+  gas: { name: '가스화력발전소', co2Concentration: 8, co2EmissionRate: 350, flueGasTemp: 120, sox: 0.001, nox: 0.015, particulates: 5 },
+  cement: { name: '시멘트공장', co2Concentration: 20, co2EmissionRate: 880, flueGasTemp: 180, sox: 0.08, nox: 0.045, particulates: 150 },
+  steel: { name: '제철소', co2Concentration: 25, co2EmissionRate: 2100, flueGasTemp: 200, sox: 0.12, nox: 0.035, particulates: 200 }
+};
+
+// 탄소포집 기술별 데이터
+const captureData = {
+  'post-combustion': { name: '연소 후 포집', baseEfficiency: 85, energyPenalty: 25, description: '배가스에서 CO₂를 화학 흡수제로 분리' },
+  'pre-combustion': { name: '연소 전 포집', baseEfficiency: 90, energyPenalty: 20, description: '연료를 가스화하여 CO₂를 분리' },
+  'oxy-fuel': { name: '순산소 연소', baseEfficiency: 95, energyPenalty: 30, description: '순산소로 연소하여 고농도 CO₂ 생산' },
+  'direct-air': { name: '직접공기포집', baseEfficiency: 80, energyPenalty: 200, description: '대기 중 CO₂를 직접 포집' }
+};
+
+// 선택 옵션 생성
+const plantSelect = document.getElementById('plantSelect');
+const captureSelect = document.getElementById('captureSelect');
+for (let key in plantData) {
+  const option = document.createElement('option');
+  option.value = key;
+  option.text = plantData[key].name;
+  plantSelect.add(option);
+}
+for (let key in captureData) {
+  const option = document.createElement('option');
+  option.value = key;
+  option.text = captureData[key].name;
+  captureSelect.add(option);
+}
+
+// 효율 계산
+function calculateEfficiency(plantKey, captureKey) {
+  const plant = plantData[plantKey];
+  const capture = captureData[captureKey];
+
+  let concentrationFactor = 1;
+  if (plant.co2Concentration < 5) concentrationFactor = 0.7;
+  else if (plant.co2Concentration < 10) concentrationFactor = 0.85;
+  else if (plant.co2Concentration > 20) concentrationFactor = 1.1;
+
+  let tempFactor = 1;
+  if (plant.flueGasTemp > 200) tempFactor = 0.9;
+  else if (plant.flueGasTemp < 100) tempFactor = 0.95;
+
+  let purityFactor = Math.max(0, 1 - (plant.sox*0.5 + plant.nox*0.3 + plant.particulates*0.0001));
+
+  const finalEfficiency = capture.baseEfficiency * concentrationFactor * tempFactor * purityFactor;
+  return Math.max(50, Math.min(98, finalEfficiency));
+}
+
+// UI 업데이트
+function updateUI() {
+  const plantKey = plantSelect.value;
+  const captureKey = captureSelect.value;
+  const efficiency = calculateEfficiency(plantKey, captureKey);
+
+  document.getElementById('efficiency').innerText = efficiency.toFixed(1) + '%';
+  document.getElementById('effBar').style.width = efficiency + '%';
+  document.getElementById('captureDesc').innerText = captureData[captureKey].description;
+  document.getElementById('energyPenalty').innerText = `에너지 페널티: +${captureData[captureKey].energyPenalty}%`;
+}
+
+// 이벤트 리스너
+plantSelect.addEventListener('change', updateUI);
+captureSelect.addEventListener('change', updateUI);
+
+// 초기 UI
+updateUI();
+</script>
+
+</body>
+</html>
