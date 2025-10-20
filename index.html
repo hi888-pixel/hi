@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>탄소포집 효율 비교</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>탄소포집 효율 비교</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gradient-to-br from-green-50 to-blue-50 p-4 sm:p-6">
 
@@ -31,7 +31,6 @@
         </div>
       </div>
 
-      <!-- 환경 변수 슬라이더 -->
       <div class="space-y-3">
         <div>
           <label class="block text-gray-600 text-sm">CO₂ 농도: <span id="co2Value">12</span>%</label>
@@ -78,7 +77,7 @@
 <!-- 상세 설명 모달 -->
 <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg p-4 sm:p-6 w-11/12 max-w-md relative">
-    <h3 class="font-bold mb-2">포집 효율 상세 정보</h3>
+    <h3 class="font-bold mb-2 text-lg">포집 기술 상세 설명</h3>
     <ul id="modalContent" class="list-disc list-inside text-sm sm:text-base"></ul>
   </div>
 </div>
@@ -218,40 +217,38 @@ document.addEventListener('DOMContentLoaded', () => {
   captureSelect.value = 'post-combustion';
   updateUI();
 
-  // ℹ️ 버튼 클릭 토글 모달
+  // ℹ️ 버튼 클릭 → 포집 기술 설명 모달
   infoBtn.addEventListener('click', () => {
     if(infoModal.classList.contains('hidden')){
-      const env = {
-        co2Concentration: Number(co2Slider.value),
-        flueGasTemp: Number(tempSlider.value),
-        pollution: Number(pollutionSlider.value),
-        particulates: Number(pmSlider.value)
-      };
       const captureKey = captureSelect.value;
-      const eff = calculateEfficiency(captureKey, env);
-      modalContent.innerHTML = `
-        <li>기술: ${captureData[captureKey].name}</li>
-        <li>CO₂ 농도: ${env.co2Concentration}%</li>
-        <li>가스 온도: ${env.flueGasTemp}°C</li>
-        <li>오염물 농도: ${env.pollution}%</li>
-        <li>미세먼지 농도: ${env.particulates} mg/m³</li>
-        <li>계산 방식: 기본 효율 × 농도·온도·순도 보정</li>
-        <li>최종 효율: ${eff.toFixed(1)}%</li>
-        <li>에너지 페널티: +${captureData[captureKey].energyPenalty}%</li>
-      `;
+      let description = '';
+      switch(captureKey){
+        case 'post-combustion':
+          description = '연소 후 포집: 연료가 연소된 뒤 발생한 배기가스에서 CO₂를 제거하는 기술입니다. 기존 발전소에 적용 가능하고 설치가 비교적 쉽습니다.';
+          break;
+        case 'pre-combustion':
+          description = '연소 전 포집: 연료를 연소하기 전에 CO₂를 분리하는 기술입니다. 효율이 높지만 설비 비용이 크고 복잡합니다.';
+          break;
+        case 'oxy-fuel':
+          description = '순산소 연소: 산소만으로 연소시켜 CO₂ 농도를 높인 뒤 쉽게 포집하는 방법입니다. 고효율이지만 고온 설비가 필요합니다.';
+          break;
+        case 'direct-air':
+          description = '직접공기포집: 공기 중 CO₂를 직접 흡수하여 분리하는 기술입니다. 설치가 자유롭지만 에너지 소모가 매우 큽니다.';
+          break;
+      }
+      modalContent.innerHTML = `<li>${description}</li>`;
       infoModal.classList.remove('hidden');
     } else {
       infoModal.classList.add('hidden');
     }
   });
 
-  // 배경 클릭 시 닫기
+  // 모달 외부 클릭 시 닫기
   infoModal.addEventListener('click', e => {
     if(e.target === infoModal) infoModal.classList.add('hidden');
   });
 
 });
 </script>
-
 </body>
 </html>
