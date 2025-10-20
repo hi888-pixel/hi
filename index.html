@@ -80,7 +80,7 @@
     <div class="bg-white rounded-lg p-4 sm:p-6 w-11/12 max-w-lg relative">
       <button id="closeModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-lg">✖️</button>
       <h3 class="font-bold text-lg mb-2">포집 효율 상세 정보</h3>
-      <ul class="text-gray-700 list-disc list-inside space-y-1 text-sm sm:text-base" id="modalContent"></ul>
+      <ul id="modalContent" class="list-disc list-inside text-sm sm:text-base"></ul>
     </div>
   </div>
 
@@ -175,10 +175,10 @@ const pmSlider = document.getElementById('pmSlider');
 function updateUI() {
   const captureKey = captureSelect.value;
   const env = {
-    co2Concentration: parseFloat(co2Slider.value),
-    flueGasTemp: parseFloat(tempSlider.value),
-    pollution: parseFloat(pollutionSlider.value),
-    particulates: parseFloat(pmSlider.value)
+    co2Concentration: Number(co2Slider.value),
+    flueGasTemp: Number(tempSlider.value),
+    pollution: Number(pollutionSlider.value),
+    particulates: Number(pmSlider.value)
   };
   const efficiency = calculateEfficiency(captureKey, env);
 
@@ -189,8 +189,6 @@ function updateUI() {
   const allEfficiencies = Object.keys(captureData).map(k => calculateEfficiency(k, env));
   effChart.data.datasets[0].data = allEfficiencies;
   effChart.update();
-
-  updateModal();
 }
 
 function bindSlider(slider, valueId) {
@@ -233,20 +231,13 @@ const closeModal = document.getElementById('closeModal');
 const modalContent = document.getElementById('modalContent');
 
 infoBtn.addEventListener('click', () => {
-  updateModal();
-  infoModal.classList.remove('hidden');
-});
-closeModal.addEventListener('click', () => infoModal.classList.add('hidden'));
-infoModal.addEventListener('click', e => { if(e.target === infoModal) infoModal.classList.add('hidden'); });
-
-function updateModal() {
   const captureKey = captureSelect.value;
   const capture = captureData[captureKey];
   const env = {
-    co2Concentration: parseFloat(co2Slider.value),
-    flueGasTemp: parseFloat(tempSlider.value),
-    pollution: parseFloat(pollutionSlider.value),
-    particulates: parseFloat(pmSlider.value)
+    co2Concentration: Number(co2Slider.value),
+    flueGasTemp: Number(tempSlider.value),
+    pollution: Number(pollutionSlider.value),
+    particulates: Number(pmSlider.value)
   };
   const efficiency = calculateEfficiency(captureKey, env);
 
@@ -258,7 +249,13 @@ function updateModal() {
     <li><strong>에너지 페널티:</strong> +${capture.energyPenalty}%</li>
     <li>모든 수치는 실시간 환경 조건에 따라 갱신됩니다.</li>
   `;
-}
+
+  infoModal.classList.remove('hidden'); // 모달 열기
+});
+
+closeModal.addEventListener('click', () => infoModal.classList.add('hidden'));
+infoModal.addEventListener('click', e => { if(e.target === infoModal) infoModal.classList.add('hidden'); });
+
 </script>
 </body>
 </html>
