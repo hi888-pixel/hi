@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>탄소포집 효율 비교</title>
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gradient-to-br from-green-50 to-blue-50 p-6">
@@ -21,7 +19,6 @@
       <div class="p-6 bg-white rounded-lg shadow-lg">
         <h2 class="font-semibold mb-4 text-gray-700">환경 설정</h2>
 
-        <!-- 발전소 및 기술 선택 -->
         <div class="space-y-4 mb-6">
           <div>
             <label class="block mb-1 text-gray-600">배출원 선택</label>
@@ -40,16 +37,12 @@
             <input id="co2Slider" type="range" min="1" max="30" value="12" step="1" class="w-full">
           </div>
           <div>
-            <label class="block text-gray-600">배가스 온도: <span id="tempValue">150</span>°C</label>
+            <label class="block text-gray-600">가스 온도: <span id="tempValue">150</span>°C</label>
             <input id="tempSlider" type="range" min="50" max="300" value="150" step="5" class="w-full">
           </div>
           <div>
-            <label class="block text-gray-600">SOx 농도: <span id="soxValue">0.03</span>%</label>
-            <input id="soxSlider" type="range" min="0.001" max="0.2" value="0.03" step="0.001" class="w-full">
-          </div>
-          <div>
-            <label class="block text-gray-600">NOx 농도: <span id="noxValue">0.025</span>%</label>
-            <input id="noxSlider" type="range" min="0.001" max="0.1" value="0.025" step="0.001" class="w-full">
+            <label class="block text-gray-600">오염물 농도: <span id="pollutionValue">0.03</span>%</label>
+            <input id="pollutionSlider" type="range" min="0.001" max="0.2" value="0.03" step="0.001" class="w-full">
           </div>
           <div>
             <label class="block text-gray-600">미세먼지 농도: <span id="pmValue">30</span> mg/m³</label>
@@ -80,10 +73,10 @@
 <script>
 // 발전소 데이터
 const plantData = {
-  coal: { name: '석탄화력발전소', co2Concentration: 12, flueGasTemp: 150, sox: 0.03, nox: 0.025, particulates: 30 },
-  gas: { name: '가스화력발전소', co2Concentration: 8, flueGasTemp: 120, sox: 0.001, nox: 0.015, particulates: 5 },
-  cement: { name: '시멘트공장', co2Concentration: 20, flueGasTemp: 180, sox: 0.08, nox: 0.045, particulates: 150 },
-  steel: { name: '제철소', co2Concentration: 25, flueGasTemp: 200, sox: 0.12, nox: 0.035, particulates: 200 }
+  coal: { name: '석탄화력발전소', co2Concentration: 12, flueGasTemp: 150, pollution: 0.03, particulates: 30 },
+  gas: { name: '가스화력발전소', co2Concentration: 8, flueGasTemp: 120, pollution: 0.001, particulates: 5 },
+  cement: { name: '시멘트공장', co2Concentration: 20, flueGasTemp: 180, pollution: 0.08, particulates: 150 },
+  steel: { name: '제철소', co2Concentration: 25, flueGasTemp: 200, pollution: 0.12, particulates: 200 }
 };
 
 // 포집 기술 데이터
@@ -94,7 +87,7 @@ const captureData = {
   'direct-air': { name: '직접공기포집', baseEfficiency: 80, energyPenalty: 200, description: '대기 중 CO₂를 직접 포집' }
 };
 
-// Select 요소 초기화
+// Select 초기화
 const plantSelect = document.getElementById('plantSelect');
 const captureSelect = document.getElementById('captureSelect');
 for (let key in plantData) {
@@ -110,7 +103,7 @@ for (let key in captureData) {
   captureSelect.add(option);
 }
 
-// 효율 계산 함수
+// 효율 계산
 function calculateEfficiency(captureKey, env) {
   const capture = captureData[captureKey];
 
@@ -123,7 +116,7 @@ function calculateEfficiency(captureKey, env) {
   if (env.flueGasTemp > 200) tempFactor = 0.9;
   else if (env.flueGasTemp < 100) tempFactor = 0.95;
 
-  let purityFactor = Math.max(0, 1 - (env.sox * 0.5 + env.nox * 0.3 + env.particulates * 0.0001));
+  let purityFactor = Math.max(0, 1 - (env.pollution * 0.5 + env.particulates * 0.0001));
 
   const finalEfficiency = capture.baseEfficiency * concentrationFactor * tempFactor * purityFactor;
   return Math.max(50, Math.min(98, finalEfficiency));
@@ -147,17 +140,18 @@ let effChart = new Chart(ctx, {
   }
 });
 
-// UI 업데이트 함수
-function updateUI() {
-  const plantKey = plantSelect.value;
-  const captureKey = captureSelect.value;
+// 슬라이더 및 UI 업데이트
+const co2Slider = document.getElementById('co2Slider');
+const tempSlider = document.getElementById('tempSlider');
+const pollutionSlider = document.getElementById('pollutionSlider');
+const pmSlider = document.getElementById('pmSlider');
 
-  // 현재 환경 변수 읽기
+function updateUI() {
+  const captureKey = captureSelect.value;
   const env = {
     co2Concentration: parseFloat(co2Slider.value),
     flueGasTemp: parseFloat(tempSlider.value),
-    sox: parseFloat(soxSlider.value),
-    nox: parseFloat(noxSlider.value),
+    pollution: parseFloat(pollutionSlider.value),
     particulates: parseFloat(pmSlider.value)
   };
 
@@ -167,41 +161,34 @@ function updateUI() {
   document.getElementById('captureDesc').innerText = captureData[captureKey].description;
   document.getElementById('energyPenalty').innerText = `에너지 페널티: +${captureData[captureKey].energyPenalty}%`;
 
-  // 그래프 업데이트
   const allEfficiencies = Object.keys(captureData).map(k => calculateEfficiency(k, env));
   effChart.data.datasets[0].data = allEfficiencies;
   effChart.update();
 }
 
-// 슬라이더 값 실시간 반영
-function bindSlider(id, valueId) {
-  const slider = document.getElementById(id);
-  const valueDisplay = document.getElementById(valueId);
+function bindSlider(slider, valueId) {
+  const valDisplay = document.getElementById(valueId);
   slider.addEventListener('input', () => {
-    valueDisplay.textContent = slider.value;
+    valDisplay.textContent = slider.value;
     updateUI();
   });
 }
 
-bindSlider('co2Slider', 'co2Value');
-bindSlider('tempSlider', 'tempValue');
-bindSlider('soxSlider', 'soxValue');
-bindSlider('noxSlider', 'noxValue');
-bindSlider('pmSlider', 'pmValue');
+bindSlider(co2Slider, 'co2Value');
+bindSlider(tempSlider, 'tempValue');
+bindSlider(pollutionSlider, 'pollutionValue');
+bindSlider(pmSlider, 'pmValue');
 
-// 선택 변경 이벤트
 plantSelect.addEventListener('change', () => {
   const p = plantData[plantSelect.value];
   co2Slider.value = p.co2Concentration;
   tempSlider.value = p.flueGasTemp;
-  soxSlider.value = p.sox;
-  noxSlider.value = p.nox;
+  pollutionSlider.value = p.pollution;
   pmSlider.value = p.particulates;
 
   document.getElementById('co2Value').textContent = p.co2Concentration;
   document.getElementById('tempValue').textContent = p.flueGasTemp;
-  document.getElementById('soxValue').textContent = p.sox;
-  document.getElementById('noxValue').textContent = p.nox;
+  document.getElementById('pollutionValue').textContent = p.pollution;
   document.getElementById('pmValue').textContent = p.particulates;
   updateUI();
 });
