@@ -6,6 +6,33 @@
   <title>탄소포집 효율 비교</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* 툴팁 스타일 */
+    .tooltip {
+      position: relative;
+      cursor: pointer;
+    }
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: rgba(0,0,0,0.75);
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 6px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
 </head>
 <body class="bg-gradient-to-br from-green-50 to-blue-50 p-6">
   <div class="max-w-7xl mx-auto">
@@ -25,7 +52,11 @@
             <select id="plantSelect" class="w-full p-2 border rounded"></select>
           </div>
           <div>
-            <label class="block mb-1 text-gray-600">포집 기술</label>
+            <label class="block mb-1 text-gray-600">포집 기술 
+              <span class="tooltip text-blue-500 ml-1">ℹ️
+                <span class="tooltip-text" id="techTooltip">포집 기술 설명이 여기에 표시됩니다.</span>
+              </span>
+            </label>
             <select id="captureSelect" class="w-full p-2 border rounded"></select>
           </div>
         </div>
@@ -54,7 +85,7 @@
       <!-- 효율 결과 -->
       <div class="p-6 bg-white rounded-lg shadow-lg text-center">
         <h2 class="font-semibold mb-4 text-gray-700">포집 효율 결과</h2>
-        <div class="text-5xl font-bold text-green-600 mb-2" id="efficiency">0%</div>
+        <div id="efficiency" class="text-5xl font-bold mb-2 text-green-600">0%</div>
         <div class="bg-gray-200 rounded-full h-4 mb-4">
           <div id="effBar" class="bg-green-500 h-4 rounded-full transition-all duration-1000" style="width: 0%"></div>
         </div>
@@ -87,6 +118,14 @@ const captureData = {
   'direct-air': { name: '직접공기포집', baseEfficiency: 80, energyPenalty: 200, description: '대기 중 CO₂를 직접 포집' }
 };
 
+// 색상 지정
+const colorMap = {
+  '연소 후 포집': '#3b82f6',
+  '연소 전 포집': '#10b981',
+  '순산소 연소': '#f97316',
+  '직접공기포집': '#64748b'
+};
+
 // Select 초기화
 const plantSelect = document.getElementById('plantSelect');
 const captureSelect = document.getElementById('captureSelect');
@@ -106,7 +145,6 @@ for (let key in captureData) {
 // 효율 계산
 function calculateEfficiency(captureKey, env) {
   const capture = captureData[captureKey];
-
   let concentrationFactor = 1;
   if (env.co2Concentration < 5) concentrationFactor = 0.7;
   else if (env.co2Concentration < 10) concentrationFactor = 0.85;
@@ -116,10 +154,10 @@ function calculateEfficiency(captureKey, env) {
   if (env.flueGasTemp > 200) tempFactor = 0.9;
   else if (env.flueGasTemp < 100) tempFactor = 0.95;
 
-  let purityFactor = Math.max(0, 1 - (env.pollution * 0.5 + env.particulates * 0.0001));
+  let purityFactor = Math.max(0, 1 - (env.pollution * 0.5 + env.particulates * 0.0003));
 
   const finalEfficiency = capture.baseEfficiency * concentrationFactor * tempFactor * purityFactor;
-  return Math.max(50, Math.min(98, finalEfficiency));
+  return Math.max(40, Math.min(98, finalEfficiency));
 }
 
 // Chart.js 초기화
@@ -131,6 +169,7 @@ let effChart = new Chart(ctx, {
     datasets: [{
       label: '포집 효율(%)',
       data: [],
+      backgroundColor: Object.values(captureData).map(c => colorMap[c.name]),
       borderWidth: 1
     }]
   },
@@ -145,6 +184,7 @@ const co2Slider = document.getElementById('co2Slider');
 const tempSlider = document.getElementById('tempSlider');
 const pollutionSlider = document.getElementById('pollutionSlider');
 const pmSlider = document.getElementById('pmSlider');
+const tooltip = document.getElementById('techTooltip');
 
 function updateUI() {
   const captureKey = captureSelect.value;
@@ -156,14 +196,29 @@ function updateUI() {
   };
 
   const efficiency = calculateEfficiency(captureKey, env);
-  document.getElementById('efficiency').innerText = efficiency.toFixed(1) + '%';
+  const effElem = document.getElementById('efficiency');
+  effElem.innerText = efficiency.toFixed(1) + '%';
+
+  // 색상 변화
+  if (efficiency >= 90) {
+    effElem.className = 'text-5xl font-bold mb-2 text-green-600';
+    document.getElementById('effBar').className = 'bg-green-500 h-4 rounded-full transition-all duration-1000';
+  } else if (efficiency >= 70) {
+    effElem.className = 'text-5xl font-bold mb-2 text-yellow-500';
+    document.getElementById('effBar').className = 'bg-yellow-400 h-4 rounded-full transition-all duration-1000';
+  } else {
+    effElem.className = 'text-5xl font-bold mb-2 text-red-500';
+    document.getElementById('effBar').className = 'bg-red-500 h-4 rounded-full transition-all duration-1000';
+  }
+
   document.getElementById('effBar').style.width = efficiency + '%';
   document.getElementById('captureDesc').innerText = captureData[captureKey].description;
   document.getElementById('energyPenalty').innerText = `에너지 페널티: +${captureData[captureKey].energyPenalty}%`;
+  tooltip.textContent = captureData[captureKey].description;
 
   const allEfficiencies = Object.keys(captureData).map(k => calculateEfficiency(k, env));
   effChart.data.datasets[0].data = allEfficiencies;
-  effChart.update();
+  effChart.update('none');
 }
 
 function bindSlider(slider, valueId) {
