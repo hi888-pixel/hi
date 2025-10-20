@@ -78,7 +78,6 @@
 <!-- 상세 설명 모달 -->
 <div id="infoModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg p-4 sm:p-6 w-11/12 max-w-md relative">
-    <button id="closeModal" class="absolute top-2 right-2 text-gray-500 text-lg">✖️</button>
     <h3 class="font-bold mb-2">포집 효율 상세 정보</h3>
     <ul id="modalContent" class="list-disc list-inside text-sm sm:text-base"></ul>
   </div>
@@ -86,7 +85,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
   // 데이터
   const plantData = {
     coal: { name: '석탄화력발전소', co2Concentration: 12, flueGasTemp: 150, pollution: 0.03, particulates: 30 },
@@ -119,15 +117,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const infoBtn = document.getElementById('infoBtn');
   const infoModal = document.getElementById('infoModal');
   const modalContent = document.getElementById('modalContent');
-  const closeModal = document.getElementById('closeModal');
 
   // Select 초기화
-  for(let key in plantData){
+  for (let key in plantData) {
     const opt = document.createElement('option');
     opt.value = key; opt.text = plantData[key].name;
     plantSelect.add(opt);
   }
-  for(let key in captureData){
+  for (let key in captureData) {
     const opt = document.createElement('option');
     opt.value = key; opt.text = captureData[key].name;
     captureSelect.add(opt);
@@ -137,16 +134,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function calculateEfficiency(captureKey, env){
     const capture = captureData[captureKey];
     let concFactor = 1;
-    if(env.co2Concentration <5) concFactor=0.7;
-    else if(env.co2Concentration<10) concFactor=0.85;
-    else if(env.co2Concentration>20) concFactor=1.1;
+    if(env.co2Concentration < 5) concFactor = 0.7;
+    else if(env.co2Concentration < 10) concFactor = 0.85;
+    else if(env.co2Concentration > 20) concFactor = 1.1;
 
-    let tempFactor=1;
-    if(env.flueGasTemp>200) tempFactor=0.9;
-    else if(env.flueGasTemp<100) tempFactor=0.95;
+    let tempFactor = 1;
+    if(env.flueGasTemp > 200) tempFactor = 0.9;
+    else if(env.flueGasTemp < 100) tempFactor = 0.95;
 
-    let purityFactor = Math.max(0,1-(env.pollution*0.5 + env.particulates*0.0001));
-    return Math.max(50,Math.min(98,capture.baseEfficiency*concFactor*tempFactor*purityFactor));
+    let purityFactor = Math.max(0, 1 - (env.pollution * 0.5 + env.particulates * 0.0001));
+    return Math.max(50, Math.min(98, capture.baseEfficiency * concFactor * tempFactor * purityFactor));
   }
 
   function updateUI(){
@@ -158,106 +155,100 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const captureKey = captureSelect.value;
     const eff = calculateEfficiency(captureKey, env);
-    efficiencyEl.textContent = eff.toFixed(1)+'%';
-    effBar.style.width = eff+'%';
+    efficiencyEl.textContent = eff.toFixed(1) + '%';
+    effBar.style.width = eff + '%';
     energyPenaltyEl.textContent = `에너지 페널티: +${captureData[captureKey].energyPenalty}%`;
 
     // Chart 업데이트
-    const allEff = Object.keys(captureData).map(k=>calculateEfficiency(k, env));
+    const allEff = Object.keys(captureData).map(k => calculateEfficiency(k, env));
     effChart.data.datasets[0].data = allEff;
     effChart.update();
   }
 
   function bindSlider(slider, valueId){ 
     const valDisplay = document.getElementById(valueId);
-    slider.addEventListener('input',()=>{
+    slider.addEventListener('input', () => {
       valDisplay.textContent = slider.value;
       updateUI();
     });
   }
+
   bindSlider(co2Slider,'co2Value');
   bindSlider(tempSlider,'tempValue');
   bindSlider(pollutionSlider,'pollutionValue');
   bindSlider(pmSlider,'pmValue');
 
-  plantSelect.addEventListener('change',()=>{
+  plantSelect.addEventListener('change', () => {
     const p = plantData[plantSelect.value];
-    co2Slider.value=p.co2Concentration;
-    tempSlider.value=p.flueGasTemp;
-    pollutionSlider.value=p.pollution;
-    pmSlider.value=p.particulates;
-    co2Value.textContent=p.co2Concentration;
-    tempValue.textContent=p.flueGasTemp;
-    pollutionValue.textContent=p.pollution;
-    pmValue.textContent=p.particulates;
+    co2Slider.value = p.co2Concentration;
+    tempSlider.value = p.flueGasTemp;
+    pollutionSlider.value = p.pollution;
+    pmSlider.value = p.particulates;
+    co2Value.textContent = p.co2Concentration;
+    tempValue.textContent = p.flueGasTemp;
+    pollutionValue.textContent = p.pollution;
+    pmValue.textContent = p.particulates;
     updateUI();
   });
+  captureSelect.addEventListener('change', updateUI);
 
-  captureSelect.addEventListener('change',updateUI);
-
-  // Chart.js
+  // Chart.js 초기화
   const ctx = document.getElementById('effChart').getContext('2d');
-  const effChart = new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels: Object.values(captureData).map(c=>c.name),
-      datasets:[{
-        label:'포집 효율(%)',
-        data:[],
-        backgroundColor:['#4ade80','#60a5fa','#fbbf24','#f87171'],
+  const effChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: Object.values(captureData).map(c => c.name),
+      datasets: [{
+        label: '포집 효율(%)',
+        data: [],
+        backgroundColor: ['#4ade80','#60a5fa','#fbbf24','#f87171'],
         borderColor:'#2563eb',
         borderWidth:1
       }]
     },
     options:{
       responsive:true,
-      scales:{y:{beginAtZero:true,max:100}},
-      plugins:{
-        tooltip:{
-          callbacks:{
-            label:function(ctx){ return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}%`; }
-          },
-          backgroundColor:'rgba(0,0,0,0.8)',
-          titleColor:'#fff',
-          bodyColor:'#e5e7eb',
-          borderWidth:1,
-          borderColor:'#fff'
-        },
-        legend:{display:false}
-      }
+      scales:{ y:{ beginAtZero:true, max:100 } },
+      plugins:{ legend:{ display:false } }
     }
   });
 
-  // 초기화
-  plantSelect.value='coal';
-  captureSelect.value='post-combustion';
+  // 초기값
+  plantSelect.value = 'coal';
+  captureSelect.value = 'post-combustion';
   updateUI();
 
-  // 모달 이벤트
-  infoBtn.addEventListener('click',()=>{
-    const env={
-      co2Concentration:Number(co2Slider.value),
-      flueGasTemp:Number(tempSlider.value),
-      pollution:Number(pollutionSlider.value),
-      particulates:Number(pmSlider.value)
-    };
-    const captureKey = captureSelect.value;
-    const eff = calculateEfficiency(captureKey, env);
-    modalContent.innerHTML = `
-      <li>기술: ${captureData[captureKey].name}</li>
-      <li>CO₂ 농도: ${env.co2Concentration}%</li>
-      <li>가스 온도: ${env.flueGasTemp}°C</li>
-      <li>오염물 농도: ${env.pollution}%</li>
-      <li>미세먼지 농도: ${env.particulates} mg/m³</li>
-      <li>계산 방식: 기본 효율 × 농도·온도·순도 보정</li>
-      <li>최종 효율: ${eff.toFixed(1)}%</li>
-      <li>에너지 페널티: +${captureData[captureKey].energyPenalty}%</li>
-    `;
-    infoModal.classList.remove('hidden');
+  // ℹ️ 버튼 클릭 토글 모달
+  infoBtn.addEventListener('click', () => {
+    if(infoModal.classList.contains('hidden')){
+      const env = {
+        co2Concentration: Number(co2Slider.value),
+        flueGasTemp: Number(tempSlider.value),
+        pollution: Number(pollutionSlider.value),
+        particulates: Number(pmSlider.value)
+      };
+      const captureKey = captureSelect.value;
+      const eff = calculateEfficiency(captureKey, env);
+      modalContent.innerHTML = `
+        <li>기술: ${captureData[captureKey].name}</li>
+        <li>CO₂ 농도: ${env.co2Concentration}%</li>
+        <li>가스 온도: ${env.flueGasTemp}°C</li>
+        <li>오염물 농도: ${env.pollution}%</li>
+        <li>미세먼지 농도: ${env.particulates} mg/m³</li>
+        <li>계산 방식: 기본 효율 × 농도·온도·순도 보정</li>
+        <li>최종 효율: ${eff.toFixed(1)}%</li>
+        <li>에너지 페널티: +${captureData[captureKey].energyPenalty}%</li>
+      `;
+      infoModal.classList.remove('hidden');
+    } else {
+      infoModal.classList.add('hidden');
+    }
   });
 
-  closeModal.addEventListener('click',()=> infoModal.classList.add('hidden'));
-  infoModal.addEventListener('click', e => { if(e.target===infoModal) infoModal.classList.add('hidden'); });
+  // 배경 클릭 시 닫기
+  infoModal.addEventListener('click', e => {
+    if(e.target === infoModal) infoModal.classList.add('hidden');
+  });
 
 });
 </script>
